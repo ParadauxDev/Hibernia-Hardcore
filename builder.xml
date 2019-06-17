@@ -1,0 +1,7 @@
+<project name="Hardcore" default="Build">
+	<target name="Build">
+		<jar
+			jarfile="C:\Users\User\Documents\workspace\LocalhostServer\plugins\${ant.project.name}.jar"
+			basedir="./target/classes/" includes="**/*" />
+	</target>
+</project>

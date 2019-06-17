@@ -1,3 +1,7 @@
-name: HiberniaHardcore
-main: co.paradaux.HiberniaHC.HiberniaHardcore
+name: Hardcore
+main: co.paradaux.Hibernia.Hardcore.HiberniaHardcore 
 version: 1.0.0
+author: Paradaux
+commands:
+   hardcore:
+      usage: /hardcore
