@@ -1,22 +1,34 @@
 package co.paradaux.Hibernia.Hardcore;
 
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
-
 import org.bukkit.Bukkit;
+import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import com.zaxxer.hikari.HikariConfig;
+
+import co.aikar.taskchain.BukkitTaskChainFactory;
+import co.aikar.taskchain.TaskChain;
+import co.aikar.taskchain.TaskChainFactory;
 import co.paradaux.Hibernia.Hardcore.cmds.HardcoreCMD;
+import ninja.egg82.sql.SQL;
 
 public class HiberniaHardcore extends JavaPlugin {
 
-	private static Connection connection;
+	private static TaskChainFactory taskChainFactory;
+	public static <T> TaskChain<T> newChain() {
+		return taskChainFactory.newChain();
+	}
+	public static <T> TaskChain<T> newSharedChain(String name) {
+		return taskChainFactory.newSharedChain(name);
+	}
+
+
 
 
 	@Override
 	public void onEnable() {
+
+		taskChainFactory = BukkitTaskChainFactory.create(this);
 
 		this.getConfig().options().copyDefaults();
 		saveDefaultConfig();
@@ -31,40 +43,48 @@ public class HiberniaHardcore extends JavaPlugin {
 
 		getCommand("hardcore").setExecutor(new HardcoreCMD());
 
-		try {
-			openConnection();
-			System.out.println("Connecing to the database");
-		} catch (final SQLException e) {
-			getLogger().info("Error in HiberniaHardcore! : " + e.toString());
-		}
-
-
 	}
 
-	private void openConnection() throws SQLException {
+	public static SQL getSQL(Plugin plugin) {
 
-		final String host = this.getConfig().getString("database-connection.host");
-		final String dbname = this.getConfig().getString("database-connection.db-name");
-		final String dbuser = this.getConfig().getString("database-connection.db-username");
-		final String dbpw = this.getConfig().getString("database-connection.db-password");
-		final int port = this.getConfig().getInt("database-connection.port");
+		final String host = plugin.getConfig().getString("database-connection.host");
+		final String dbname = plugin.getConfig().getString("database-connection.db-name");
+		final String dbuser = plugin.getConfig().getString("database-connection.db-username");
+		final String dbpw = plugin.getConfig().getString("database-connection.db-password");
+		final int port = plugin.getConfig().getInt("database-connection.port");
 
-		if (connection != null && !connection.isClosed())
-			return;
+		final HikariConfig hikariConfig = new HikariConfig();
+		hikariConfig.setJdbcUrl("jdbc:mysql://" + host + ":" + port + "/" +  dbname);
+		hikariConfig.setConnectionTestQuery("SELECT 1;");
 
-		connection = DriverManager.getConnection("jdbc:mysql://" + host + ":" + port + "/" +  dbname + "?autoReconnect=true", dbuser, dbpw);
+		hikariConfig.setUsername(dbuser);
+		hikariConfig.setPassword(dbpw);
+		hikariConfig.setMaximumPoolSize(2);
+		hikariConfig.setMinimumIdle(2);
+		hikariConfig.setMaxLifetime(1800000L);
+		hikariConfig.setConnectionTimeout(5000L);
+		hikariConfig.addDataSourceProperty("useUnicode", true);
+		hikariConfig.addDataSourceProperty("characterEncoding", "utf8");
+		hikariConfig.addDataSourceProperty("useLegacyDatetimeCode", false);
+		hikariConfig.addDataSourceProperty("serverTimezone", "UTC");
+		hikariConfig.setAutoCommit(true);
+		hikariConfig.addDataSourceProperty("useSSL", false);
+		hikariConfig.addDataSourceProperty("cacheServerConfiguration", "true");
+		hikariConfig.addDataSourceProperty("useLocalSessionState", "true");
+		hikariConfig.addDataSourceProperty("useLocalTransactionState", "true");
+		hikariConfig.addDataSourceProperty("rewriteBatchedStatements", "true");
+		hikariConfig.addDataSourceProperty("useServerPrepStmts", "true");
+		hikariConfig.addDataSourceProperty("cachePrepStmts", "true");
+		hikariConfig.addDataSourceProperty("maintainTimeStats", "false");
+		hikariConfig.addDataSourceProperty("useUnbufferedIO", "false");
+		hikariConfig.addDataSourceProperty("useReadAheadInput", "false");
+		hikariConfig.addDataSourceProperty("prepStmtCacheSize", "250");
+		hikariConfig.addDataSourceProperty("prepStmtCacheSqlLimit", "2048");
+		hikariConfig.addDataSourceProperty("cacheResultSetMetadata", "true");
+		hikariConfig.addDataSourceProperty("elideSetAutoCommits", "true");
+		return new SQL(hikariConfig);
 	}
 
-	public static PreparedStatement prepareStatement(String query) {
-
-		PreparedStatement ps = null;
-		try {
-			ps = connection.prepareStatement(query);
-		} catch (final SQLException e){
-			e.printStackTrace();
-		}
-		return ps;
-	}
 
 
 }
